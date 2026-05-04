@@ -1,0 +1,109 @@
+/**
+ * ຕັ້ງຄ່າ ID ຂອງ Spreadsheet ທີ່ຕ້ອງການບັນທຶກຂໍ້ມູນ
+ */
+const SPREADSHEET_ID = "1h-8hLegppkpX3jRSCjTBD1tXMlXFBPQAKGncCjT9F80";
+const SHEET_NAME = "Scans";
+const MASTER_SHEET = "MasterShops";
+
+/**
+ * ຟັງຊັນຫຼັກເພື່ອສະແດງໜ້າເວັບ
+ */
+function doGet() {
+  return HtmlService.createHtmlOutputFromFile('index')
+    .setTitle('Cooler QR Scan System')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+/**
+ * ຟັງຊັນບັນທຶກຂໍ້ມູນການສະແກນລົງໃນ Sheet "Scans"
+ */
+function saveScanData(data) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let sheet = ss.getSheetByName(SHEET_NAME);
+    
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_NAME);
+      sheet.appendRow(["ວັນທີ ແລະ ເວລາ", "ຊື່ຮ້ານຄ້າ", "ລະຫັດ QR", "ສະຖານທີ່"]);
+      sheet.getRange(1, 1, 1, 4).setFontWeight("bold").setBackground("#f1f5f9");
+    }
+    
+    sheet.appendRow([new Date(), data.shopName, data.shopId, data.location]);
+    return { status: "success" };
+  } catch (error) {
+    return { status: "error", message: error.toString() };
+  }
+}
+
+/**
+ * ແກ້ໄຂ Error: ຟັງຊັນອັບເດດລາຍຊື່ຮ້ານຄ້າຫຼັກ (Master List)
+ * @param {Array} shopList - ລາຍຊື່ຮ້ານຄ້າຈາກ Frontend
+ */
+function updateMasterShopList(shopList) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let sheet = ss.getSheetByName(MASTER_SHEET);
+    
+    if (!sheet) {
+      sheet = ss.insertSheet(MASTER_SHEET);
+    }
+    
+    // ລຶບຂໍ້ມູນເກົ່າອອກທັງໝົດ
+    sheet.clear();
+    
+    // ເພີ່ມຫົວຂໍ້ (Headers)
+    const headers = ["ID", "Name", "Location", "Scans", "LastScan"];
+    sheet.appendRow(headers);
+    sheet.getRange(1, 1, 1, 5).setFontWeight("bold").setBackground("#e2e8f0");
+    
+    // ກວດສອບວ່າລາຍຊື່ບໍ່ວ່າງເປົ່າ ກ່ອນຈະບັນທຶກ
+    if (shopList && Array.isArray(shopList) && shopList.length > 0) {
+      const rows = shopList.map(s => [
+        String(s.id || ""),
+        String(s.name || ""),
+        String(s.location || "ນະຄອນຫຼວງວຽງຈັນ"),
+        Number(s.scans || 0),
+        String(s.lastScan || "-")
+      ]);
+      
+      // ຂຽນຂໍ້ມູນລົງ Sheet ເທື່ອດຽວ (Batch update)
+      sheet.getRange(2, 1, rows.length, 5).setValues(rows);
+    }
+    
+    return { status: "success", count: shopList ? shopList.length : 0 };
+  } catch (error) {
+    return { status: "error", message: error.toString() };
+  }
+}
+
+/**
+ * ດຶງຂໍ້ມູນສະຖິຕິ ແລະ ລາຍຊື່ຮ້ານຄ້າຫຼັກ
+ */
+function getDashboardStats() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    
+    // ດຶງຈຳນວນການສະແກນ
+    const scanSheet = ss.getSheetByName(SHEET_NAME);
+    const totalScans = (scanSheet && scanSheet.getLastRow() > 1) ? scanSheet.getLastRow() - 1 : 0;
+    
+    // ດຶງລາຍຊື່ຮ້ານຄ້າ
+    const masterSheet = ss.getSheetByName(MASTER_SHEET);
+    let masterShops = [];
+    if (masterSheet && masterSheet.getLastRow() > 1) {
+      const data = masterSheet.getRange(2, 1, masterSheet.getLastRow() - 1, 5).getValues();
+      masterShops = data.map(row => ({
+        id: String(row[0]),
+        name: String(row[1]),
+        location: String(row[2]),
+        scans: Number(row[3]) || 0,
+        lastScan: String(row[4])
+      }));
+    }
+    
+    return { totalScans, masterShops };
+  } catch (e) {
+    return { totalScans: 0, masterShops: [] };
+  }
+}

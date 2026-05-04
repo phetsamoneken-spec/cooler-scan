@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Library ສຳລັບອ່ານ Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;700;900&display=swap');
+      body { font-family: 'Noto Sans Lao', sans-serif; background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      @keyframes bounce-in {
+        0% { transform: scale(0.95); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      .animate-bounce-in { animation: bounce-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+      .shop-card:active { transform: scale(0.98); }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect, useMemo, useRef } = React;
+      
+      const Icon = ({ name, size = 24, className = "" }) => {
+        const icons = {
+          LayoutDashboard: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>,
+          Store: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"/></svg>,
+          QrCode: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v.01"/></svg>,
+          Search: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+          History: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>,
+          ChevronRight: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m9 18 6-6-6-6"/></svg>,
+          Smartphone: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>,
+          Edit: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>,
+          Trash: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>,
+          Settings: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>,
+          Plus: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
+          FileSpreadsheet: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2v2H8z"/><path d="M14 13h2v2h-2z"/><path d="M8 17h2v2H8z"/><path d="M14 17h2v2h-2z"/></svg>,
+          BarChart3: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>,
+          X: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        };
+        return icons[name] || null;
+      };
+
+      const App = () => {
+        const [activeTab, setActiveTab] = useState('dashboard');
+        const [searchTerm, setSearchTerm] = useState('');
+        const [selectedShop, setSelectedShop] = useState(null);
+        const [isScanning, setIsScanning] = useState(false);
+        const [totalScans, setTotalScans] = useState(0);
+        const [isManageMode, setIsManageMode] = useState(false);
+        const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+        const [editingShop, setEditingShop] = useState(null);
+        const [isSyncing, setIsSyncing] = useState(false);
+        
+        const fileInputRef = useRef(null);
+
+        // ລາຍຊື່ຮ້ານຄ້າເລີ່ມຕົ້ນ (Default)
+        const [shops, setShops] = useState([
+          { id: 'CL-01067', name: 'ໂຮງແຮມສະຫວັນທິບ', location: 'ນະຄອນຫຼວງວຽງຈັນ', scans: 0, lastScan: '-' },
+          { id: 'CL-251392', name: 'ມາດາດ ບຸບເຝ້ຊີ້ນດາດ', location: 'ນະຄອນຫຼວງວຽງຈັນ', scans: 0, lastScan: '-' },
+          { id: 'CL-08986', name: 'ເຈ້ ຕື ເຝີ-ລາບແຊບ', location: 'ນະຄອນຫຼວງວຽງຈັນ', scans: 0, lastScan: '-' }
+        ]);
+
+        // ຟັງຊັນ Sync ຂໍ້ມູນລົງ Spreadsheet
+        const syncShopsToBackend = (updatedList) => {
+          if (typeof google !== 'undefined') {
+            setIsSyncing(true);
+            google.script.run
+              .withSuccessHandler((res) => {
+                setIsSyncing(false);
+                if(res.status === "error") alert("Sync Error: " + res.message);
+              })
+              .withFailureHandler((err) => {
+                setIsSyncing(false);
+                alert("Connection Error: " + err);
+              })
+              .updateMasterShopList(updatedList);
+          }
+        };
+
+        useEffect(() => {
+          if (typeof google !== 'undefined') {
+            google.script.run.withSuccessHandler((res) => {
+              setTotalScans(res.totalScans || 0);
+              if (res.masterShops && res.masterShops.length > 0) {
+                setShops(res.masterShops);
+              }
+            }).getDashboardStats();
+          }
+        }, []);
+
+        const filteredShops = useMemo(() => {
+          const term = searchTerm.toLowerCase();
+          return shops.filter(shop => 
+            String(shop.name).toLowerCase().includes(term) || 
+            String(shop.id).toLowerCase().includes(term)
+          );
+        }, [shops, searchTerm]);
+
+        const handleScanSimulation = (shop) => {
+          setIsScanning(true);
+          const scanData = { shopName: shop.name, shopId: shop.id, location: shop.location };
+
+          if (typeof google !== 'undefined') {
+            google.script.run
+              .withSuccessHandler(() => {
+                const updated = shops.map(s => s.id === shop.id ? { ...s, scans: s.scans + 1, lastScan: new Date().toLocaleString('en-GB') } : s);
+                setShops(updated);
+                setTotalScans(prev => prev + 1);
+                setIsScanning(false);
+                setSelectedShop(null);
+                syncShopsToBackend(updated);
+              })
+              .withFailureHandler(() => setIsScanning(false))
+              .saveScanData(scanData);
+          } else {
+            setTimeout(() => {
+              const updated = shops.map(s => s.id === shop.id ? { ...s, scans: s.scans + 1, lastScan: new Date().toLocaleString('en-GB') } : s);
+              setShops(updated);
+              setTotalScans(prev => prev + 1);
+              setIsScanning(false);
+              setSelectedShop(null);
+            }, 800);
+          }
+        };
+
+        const handleExcelImport = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            const data = evt.target.result;
+            const workbook = XLSX.read(data, { type: 'binary' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+            const imported = json.map(row => {
+              if (!row || row.length < 2) return null;
+              // ຊອກຫາ ID (CL-XXXX) ແລະ ຊື່ຮ້ານ
+              const idCell = row.find(c => String(c).toUpperCase().includes('CL-'));
+              const nameCell = row.find(c => isNaN(c) && !String(c).includes('CL-') && String(c).length > 2);
+              
+              if (idCell && nameCell) {
+                return {
+                  id: String(idCell).trim().toUpperCase(),
+                  name: String(nameCell).trim(),
+                  location: 'ນະຄອນຫຼວງວຽງຈັນ',
+                  scans: 0,
+                  lastScan: '-'
+                };
+              }
+              return null;
+            }).filter(Boolean);
+
+            if (imported.length > 0) {
+              setShops(imported);
+              syncShopsToBackend(imported);
+              alert(`ນຳເຂົ້າສຳເລັດ ${imported.length} ຮ້ານຄ້າ`);
+            } else {
+              alert("ບໍ່ພົບຂໍ້ມູນຮ້ານຄ້າທີ່ຖືກຕ້ອງ (ຕ້ອງມີລະຫັດ CL-...)");
+            }
+          };
+          reader.readAsBinaryString(file);
+        };
+
+        const saveShop = (e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target);
+          const name = formData.get('name').trim();
+          const id = formData.get('id').trim().toUpperCase();
+
+          let updated;
+          if (editingShop) {
+            updated = shops.map(s => s.id === editingShop.id ? { ...s, name, id } : s);
+          } else {
+            updated = [{ id, name, location: 'ນະຄອນຫຼວງວຽງຈັນ', scans: 0, lastScan: '-' }, ...shops];
+          }
+          setShops(updated);
+          syncShopsToBackend(updated);
+          setEditingShop(null);
+          setIsEditModalOpen(false);
+        };
+
+        const deleteShop = (id) => {
+          if(confirm(`ທ່ານຕ້ອງການລົບຮ້ານຄ້ານີ້ແທ້ຫຼືບໍ່?`)) {
+            const updated = shops.filter(s => s.id !== id);
+            setShops(updated);
+            syncShopsToBackend(updated);
+          }
+        };
+
+        const Dashboard = () => (
+          <div className="p-5 space-y-6 pb-32 animate-bounce-in">
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900">ແຜງຄວບຄຸມ</h1>
+                <p className="text-slate-500 text-sm">ຈັດການຂໍ້ມູນຕູ້ແຊ່ QR Code</p>
+              </div>
+              <div className="bg-white p-2.5 rounded-2xl shadow-sm border border-slate-100">
+                <Icon name="BarChart3" className="text-blue-600" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-blue-600 p-5 rounded-[24px] text-white shadow-xl shadow-blue-100">
+                <p className="text-[10px] uppercase tracking-widest font-bold opacity-70">Scans ໃນ Sheet</p>
+                <h3 className="text-3xl font-black mt-1">{totalScans}</h3>
+              </div>
+              <div className="bg-emerald-500 p-5 rounded-[24px] text-white shadow-xl shadow-emerald-100">
+                <p className="text-[10px] uppercase tracking-widest font-bold opacity-70">ຮ້ານທັງໝົດ</p>
+                <h3 className="text-3xl font-black mt-1">{shops.length}</h3>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4 text-sm">
+                <Icon name="History" size={18} className="text-blue-500" />
+                ການສະແກນຫຼ້າສຸດ
+              </h3>
+              <div className="space-y-4">
+                {shops.filter(s => s.lastScan !== '-').sort((a,b) => b.scans - a.scans).slice(0, 3).map((shop, i) => (
+                  <div key={`${shop.id}-${i}`} className="flex justify-between items-center group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
+                        <Icon name="Store" size={20} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-800 line-clamp-1">{shop.name}</p>
+                        <p className="text-[10px] text-slate-400">{shop.lastScan}</p>
+                      </div>
+                    </div>
+                    <div className="text-emerald-600 text-[10px] font-bold bg-emerald-50 px-2 py-1 rounded tracking-tighter">SAVED</div>
+                  </div>
+                ))}
+                {shops.filter(s => s.lastScan !== '-').length === 0 && <p className="text-center text-slate-400 text-xs py-4">ຍັງບໍ່ມີຂໍ້ມູນການສະແກນ</p>}
+              </div>
+            </div>
+          </div>
+        );
+
+        const ShopList = () => (
+          <div className="p-5 space-y-4 pb-32 animate-bounce-in">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Icon name="Search" size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input 
+                  type="text" placeholder="ຄົ້ນຫາຊື່ຮ້ານ ຫຼື ລະຫັດ..."
+                  className="w-full pl-11 pr-4 py-4 bg-white rounded-2xl border border-slate-100 shadow-sm outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 transition-all"
+                  value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <button 
+                onClick={() => setIsManageMode(!isManageMode)} 
+                className={`p-4 rounded-2xl shadow-sm transition-all flex items-center justify-center ${isManageMode ? 'bg-blue-600 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}
+              >
+                <Icon name="Settings" size={20} />
+              </button>
+            </div>
+
+            {isManageMode && (
+              <div className="grid grid-cols-2 gap-2 animate-bounce-in">
+                <button onClick={() => { setEditingShop(null); setIsEditModalOpen(true); }} className="py-4 bg-emerald-500 text-white rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all">
+                  <Icon name="Plus" size={16} /> ເພີ່ມຮ້ານໃໝ່
+                </button>
+                <button onClick={() => fileInputRef.current.click()} className="py-4 bg-slate-800 text-white rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all">
+                  <Icon name="FileSpreadsheet" size={16} /> Import Excel
+                </button>
+                <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls" onChange={handleExcelImport} />
+              </div>
+            )}
+
+            {isSyncing && <p className="text-[10px] text-blue-500 font-bold text-center animate-pulse">ກຳລັງ Sync ຂໍ້ມູນລົງ Sheet...</p>}
+
+            <div className="space-y-3">
+              {filteredShops.map((shop, i) => (
+                <div 
+                  key={`${shop.id}-${i}`} 
+                  onClick={() => !isManageMode && setSelectedShop(shop)}
+                  className={`bg-white p-4 rounded-2xl border border-slate-100 flex justify-between items-center transition-all shadow-sm ${!isManageMode ? 'cursor-pointer hover:border-blue-200 shop-card' : ''}`}
+                >
+                  <div className="flex gap-4 items-center flex-1 min-w-0">
+                    <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-600 shrink-0">
+                      <Icon name="QrCode" size={24} />
+                    </div>
+                    <div className="truncate">
+                      <h4 className="font-bold text-slate-800 text-sm truncate">{shop.name}</h4>
+                      <div className="flex items-center gap-1.5 text-slate-400 text-[11px] mt-0.5">
+                        <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded text-[10px] font-black">{shop.id}</span>
+                        <Icon name="MapPin" size={10} />
+                        <span className="truncate">{shop.location}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {isManageMode ? (
+                    <div className="flex gap-1 shrink-0">
+                      <button onClick={(e) => { e.stopPropagation(); setEditingShop(shop); setIsEditModalOpen(true); }} className="p-2.5 text-blue-500 bg-blue-50 rounded-xl"><Icon name="Edit" size={18}/></button>
+                      <button onClick={(e) => { e.stopPropagation(); deleteShop(shop.id); }} className="p-2.5 text-red-500 bg-red-50 rounded-xl"><Icon name="Trash" size={18}/></button>
+                    </div>
+                  ) : (
+                    <Icon name="ChevronRight" size={18} className="text-slate-200 ml-2 shrink-0" />
+                  )}
+                </div>
+              ))}
+              {filteredShops.length === 0 && <p className="text-center text-slate-400 text-xs py-20">ບໍ່ພົບຂໍ້ມູນຮ້ານຄ້າ</p>}
+            </div>
+          </div>
+        );
+
+        return (
+          <div className="min-h-screen max-w-md mx-auto relative flex flex-col bg-slate-50 shadow-2xl">
+            <header className="bg-white/80 backdrop-blur-md px-6 py-5 border-b border-slate-50 sticky top-0 z-40 flex justify-between items-center">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200"><Icon name="QrCode" size={20} className="text-white" /></div>
+                <span className="font-black text-xl tracking-tighter uppercase">Cooler<span className="text-blue-600">Scan</span></span>
+              </div>
+            </header>
+
+            <main className="flex-1 overflow-y-auto no-scrollbar">
+              {activeTab === 'dashboard' ? <Dashboard /> : <ShopList />}
+            </main>
+
+            {/* Modal: ສະແດງ QR */}
+            {selectedShop && (
+              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-4">
+                <div className="bg-white w-full max-w-sm rounded-[40px] p-8 shadow-2xl animate-bounce-in">
+                  <div className="text-center space-y-5">
+                    <h2 className="text-xl font-black text-slate-800 px-2 leading-tight">{selectedShop.name}</h2>
+                    <div className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-black inline-block">{selectedShop.id}</div>
+                    <div className="p-6 bg-slate-50 rounded-[32px] inline-block border border-slate-100">
+                      <img src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${selectedShop.id}`} className="w-48 h-48 rounded-lg" alt="QR" />
+                    </div>
+                    <div className="space-y-3">
+                      <button onClick={() => handleScanSimulation(selectedShop)} disabled={isScanning} className={`w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg transition-all ${isScanning ? 'bg-slate-100 text-slate-400' : 'bg-blue-600 text-white active:scale-95 shadow-blue-200'}`}>
+                        {isScanning ? "ກຳລັງບັນທຶກ..." : <><Icon name="Smartphone" size={20} /> ຢືນຢັນການສະແກນ</>}
+                      </button>
+                      <button onClick={() => setSelectedShop(null)} className="w-full py-2 text-slate-400 text-xs font-bold uppercase tracking-widest">ຍົກເລີກ / ປິດ</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Modal: ເພີ່ມ/ແກ້ໄຂ */}
+            {isEditModalOpen && (
+              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-6">
+                <div className="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl animate-bounce-in">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-black text-slate-800">{editingShop ? 'ແກ້ໄຂຮ້ານຄ້າ' : 'ເພີ່ມຮ້ານຄ້າໃໝ່'}</h2>
+                    <button onClick={() => setIsEditModalOpen(false)} className="p-2 text-slate-300"><Icon name="X" size={24}/></button>
+                  </div>
+                  <form onSubmit={saveShop} className="space-y-4">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1 tracking-widest">ຊື່ຮ້ານຄ້າ</label>
+                      <input name="name" defaultValue={editingShop?.name} required className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500 font-bold" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1 tracking-widest">ລະຫັດ QR (ID)</label>
+                      <input name="id" defaultValue={editingShop?.id} required className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500 font-mono font-bold" placeholder="CL-XXXXX" />
+                    </div>
+                    <div className="pt-4 flex flex-col gap-2">
+                      <button type="submit" className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-50">ບັນທຶກຂໍ້ມູນ</button>
+                      <button type="button" onClick={() => setIsEditModalOpen(false)} className="w-full py-2 text-slate-400 text-xs font-bold uppercase tracking-widest">ຍົກເລີກ</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            <nav className="fixed bottom-6 left-6 right-6 max-w-[380px] mx-auto bg-slate-900/95 backdrop-blur-xl border border-white/10 px-8 py-4 rounded-[32px] flex justify-around items-center z-40 shadow-2xl">
+              <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col items-center gap-1.5 transition-colors ${activeTab === 'dashboard' ? 'text-blue-400' : 'text-slate-500'}`}>
+                <Icon name="LayoutDashboard" size={20} /><span className="text-[9px] font-black uppercase tracking-widest">Home</span>
+              </button>
+              <button onClick={() => setActiveTab('shops')} className={`flex flex-col items-center gap-1.5 transition-colors ${activeTab === 'shops' ? 'text-blue-400' : 'text-slate-500'}`}>
+                <Icon name="Store" size={20} /><span className="text-[9px] font-black uppercase tracking-widest">Shops</span>
+              </button>
+            </nav>
+          </div>
+        );
+      };
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
